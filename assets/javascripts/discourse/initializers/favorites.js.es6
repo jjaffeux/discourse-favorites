@@ -1,7 +1,8 @@
 import buildTopicRoute from 'discourse/routes/build-topic-route';
 import DiscoverySortableController from 'discourse/controllers/discovery-sortable';
 import { customNavItemHref } from 'discourse/models/nav-item';
-import { addExtraDropItem, selectedDropItem } from 'discourse/components/category-drop';
+import { withPluginApi } from 'discourse/lib/plugin-api';
+import { iconHTML } from 'discourse-common/lib/icon-library';
 
 function buildFavoriteRoute(filter) {
   return buildTopicRoute('favorites/' + filter, {
@@ -15,6 +16,18 @@ export default {
   name: "favorites-routes",
 
   initialize(container) {
+    withPluginApi('0.8.17', api => {
+      api.modifySelectKit(["category-drop"])
+         .modifyCollectionHeader((context, content) => {
+           content += `
+            <a href="/favorites" class="category-filter">
+              ${iconHTML('star')}
+              ${I18n.t('favorites.category')}
+            </a>
+           `;
+           return content;
+         });
+    });
 
     /**
      * This feature is available only to logged users.
@@ -34,27 +47,6 @@ export default {
       const filterCapitalized = filter.capitalize();
       Discourse[`Discovery${filterCapitalized}FavoritesController`] = DiscoverySortableController.extend();
       Discourse[`Discovery${filterCapitalized}FavoritesRoute`] = buildFavoriteRoute(filter);
-    });
-
-    /**
-     * Definition of the extra cateogry that will be shown in the category drop.
-     */
-    const favoritesExtraCategory = {
-      href: '/favorites/',
-      label: I18n.t('favorites.category'),
-      icon: 'star',
-      id: 'favorites',
-    };
-
-    /**
-     * Add "Favorites" category.
-     */
-    addExtraDropItem(favoritesExtraCategory);
-    selectedDropItem(function(items) {
-      if (container.lookup('router:main').get('currentURL').startsWith('/favorites/')) {
-        return favoritesExtraCategory;
-      }
-      return null;
     });
 
     /**
